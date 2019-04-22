@@ -12,7 +12,11 @@ namespace SerialControl {
  */
 int SendCommand(std::string cmd); 
 
-std::vector<std::string> initModules();
+/**
+ * Update the list of modules connected
+ * return value : a list of the modules names (given by the modules)
+ */
+std::vector<std::string> updateModules();
 
 } //namespace SerialControl
 

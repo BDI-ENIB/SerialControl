@@ -5,8 +5,8 @@
 
 int main() {
 
-	auto output = SerialControl::initModules();
-	for(const auto &elem: output){
+	auto modules = SerialControl::updateModules();
+	for(const auto &elem: modules){
 		std::cout << elem;
 	}
 	return 0;
