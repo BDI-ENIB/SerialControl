@@ -9,5 +9,11 @@ int main() {
 	for(const auto &elem: modules){
 		std::cout << elem;
 	}
+	for(const auto &elem: modules){
+		if(elem == "I'm Groot"){
+			std::cout << SerialControl::SendCommand("whois;",elem);
+		}
+	}
 	return 0;
 }
+
