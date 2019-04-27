@@ -31,22 +31,28 @@ std::vector<std::string> updateModules(){
 	//for each USB module connected
 	for(int i=0; i<=MAX_INDEX; i++) {
 		
+		//setup
 		std::string path = "/dev/ttyACM" + std::to_string(i);
 		std::fstream file;
 
+		//open connection
 		file.open(path, std::ios_base::in|std::ios_base::out);
-		if(file.fail()) { if(DEBUG) std::cerr << "unable to open " << path << '\n';}
+		if(file.fail()) { if(DEBUG) std::cerr << "unable to open " << path << '\n'; }
+
+		//send name request
 		file << "whois;" << std::endl;
-		std::string response = "";
-		
-		getline(file,response,'\n');
+
+		//receive name request response
+		std::string response;
+		file >> response;
+
 		if(!file.fail()) {
-			std::cout << response;
 			Module mod = {false, i, response};
 			moduleList.emplace_back(mod);
 			moduleNames.emplace_back(response);
 		}
 
+		//end connection
 		file.close();
 	
 	}
@@ -55,24 +61,35 @@ std::vector<std::string> updateModules(){
 }
 
 
-std::string SendCommand(const std::string& cmd, const std::string& mod) {
+std::string sendCommand(const std::string& cmd, const std::string& mod) {
 	for(auto &elem: moduleList) {
 		if(elem.name == mod) {
+
+			//setup
 			std::fstream file;
-			file.open("/dev/ttyACM" + std::to_string(elem.id), std::ios_base::in|std::ios_base::out);
+
+			//open connection
+			file.open("/dev/ttyACM0" + std::to_string(elem.id), std::ios_base::in|std::ios_base::out);
 			if(file.fail()) {
-				std::cerr << "unable to open communication with " << mod << '\n';
+				if(DEBUG) std::cerr << "unable to open communication with " << mod << '\n';
 				return "no response";
 			}
-			file << cmd;
+
+			//send command
+			file << cmd << std::endl;
+
+			//receive response
 			std::string response;
-			getline(file,response,'\n');
+			//file >> response;
+
+			//end communication
 			file.close();
 			return response;
 		}
 	}
-	return "no response";
+	return "no_response";
 }
+
 
 int watch(const std::string& mod) {
 	for(auto &elem: moduleList) {
@@ -83,6 +100,7 @@ int watch(const std::string& mod) {
 	}
 	return 1;
 }
+
 
 std::vector<std::tuple<std::string,std::string>> update() {
 	std::vector<std::tuple<std::string,std::string>> output;

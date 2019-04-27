@@ -42,7 +42,7 @@ std::vector<std::string> updateModules();
 /**
  * Send a command to the specified module
  */
-std::string SendCommand(const std::string& cmd, const std::string& mod); 
+std::string sendCommand(const std::string& cmd, const std::string& mod); 
 
 /**
  * Set a watch flag on the specified module so that it output will be checked
