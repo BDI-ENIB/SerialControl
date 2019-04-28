@@ -11,8 +11,7 @@ int main() {
 	}
 	for(const auto &elem: modules) {
 		std::cout << elem << ": " << SerialControl::sendCommand("whois;",elem) << '\n';
-}
-	std::cout << "test" << ": " << SerialControl::sendCommand("whois;","test") << '\n';
+	}
 	return 0;
 }
 

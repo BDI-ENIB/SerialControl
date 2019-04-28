@@ -14,6 +14,7 @@ namespace SerialControl {
 #define MAX_INDEX 10
 #define TIMEOUT 10
 #define DEBUG 1
+#define ERROR 1
 
 
 //----private variables
@@ -22,11 +23,12 @@ namespace {
 
 	typedef struct {
 		bool watch = false;
-		const int id = 0;
-		const std::string name = "no_device";
+		std::string name = "no_device";
+		std::string path = "";
 	} Module;
 
 	std::vector<Module> moduleList;
+	std::vector<std::string> paths = {"/dev/ttyUSB","/dev/ttyACM"};
 
 }
 

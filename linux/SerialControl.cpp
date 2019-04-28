@@ -4,14 +4,17 @@
 //----standard libs
 #include <iostream>
 #include <exception>
+#include <thread>
+#include <chrono>
+#include <string.h>
+
 
 namespace SerialControl {
 
 //----configuration values (macros for now)
 
-#define MAX_INDEX 10
-#define TIMEOUT 10
 
+using namespace std::chrono;
 
 //----internal functions
 
@@ -28,33 +31,51 @@ namespace {
 std::vector<std::string> updateModules(){
 
 	std::vector<std::string> moduleNames;
-	//for each USB module connected
-	for(int i=0; i<=MAX_INDEX; i++) {
-		
-		//setup
-		std::string path = "/dev/ttyACM" + std::to_string(i);
-		std::fstream file;
 
-		//open connection
-		file.open(path, std::ios_base::in|std::ios_base::out);
-		if(file.fail()) { if(DEBUG) std::cerr << "unable to open " << path << '\n'; }
+	//for each path to check
+	for(const auto& basePath: paths) {
 
-		//send name request
-		file << "whois;" << std::endl;
+		//for each USB module connected
+		for(int i=0; i<=MAX_INDEX; i++) {
+			
+			//setup
+			std::string path = basePath + std::to_string(i);
+			std::fstream file;
+			Module mod;
 
-		//receive name request response
-		std::string response;
-		file >> response;
+			//open connection
+			file.open(path, std::ios_base::in|std::ios_base::out);
+			if(file.fail()) {
+				if(DEBUG) std::cout << "debug:unable to open " << path  << '\n';
+				continue;
+			}
+			mod.path = path;
 
-		if(!file.fail()) {
-			Module mod = {false, i, response};
-			moduleList.emplace_back(mod);
-			moduleNames.emplace_back(response);
+			//send name request
+			file.write("whois;",6);
+
+			//receive name request response
+			std::string response;
+			char str[2] = "";
+			
+			while(file.read(str,1)) {
+				std::cout << str << '\n';
+				if(!strcmp(str,";")) { break; }
+				response.push_back(*str);
+			}
+
+			if(!file.fail()) {
+				mod.name = response;
+				moduleList.emplace_back(mod);
+				moduleNames.emplace_back(response);
+			}
+			
+			//because magic
+			std::this_thread::sleep_for(5s);
+
+			//end connection
+			file.close();
 		}
-
-		//end connection
-		file.close();
-	
 	}
 	return moduleNames;
 
@@ -69,10 +90,10 @@ std::string sendCommand(const std::string& cmd, const std::string& mod) {
 			std::fstream file;
 
 			//open connection
-			file.open("/dev/ttyACM0" + std::to_string(elem.id), std::ios_base::in|std::ios_base::out);
+			file.open(elem.path, std::ios_base::in|std::ios_base::out);
 			if(file.fail()) {
-				if(DEBUG) std::cerr << "unable to open communication with " << mod << '\n';
-				return "no response";
+				if(ERROR) std::cerr << "unable to open communication with " << elem.name << '\n';
+				continue;
 			}
 
 			//send command
@@ -80,10 +101,13 @@ std::string sendCommand(const std::string& cmd, const std::string& mod) {
 
 			//receive response
 			std::string response;
-			//file >> response;
+			file >> response;
+			
+			//because magic
+			std::this_thread::sleep_for(2s);
 
-			//end communication
-			file.close();
+			//file.close is called implicitly
+
 			return response;
 		}
 	}
@@ -107,9 +131,9 @@ std::vector<std::tuple<std::string,std::string>> update() {
 	for(auto &elem: moduleList) {
 		if(elem.watch) {
 			std::fstream file;
-			file.open("/dev/ttyACM" + std::to_string(elem.id), std::ios_base::in);
+			file.open(elem.path, std::ios_base::in);
 			if(file.fail()) {
-				std::cerr << "unable to open communication with " << elem.name << '\n';
+				if(DEBUG) std::cerr << "unable to open communication with " << elem.name << '\n';
 				continue;
 			}
 			if(isEmpty(file)){
