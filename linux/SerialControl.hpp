@@ -6,11 +6,13 @@
 #include <vector>
 #include <fstream>
 #include <tuple>
+#include <functional>
 
 //----c libs
 #include <termios.h>
 
 namespace SerialControl {
+
 
 //----configuration values (macros for now)
 
@@ -24,26 +26,51 @@ namespace SerialControl {
 #define READ_FAIL "sc_rf"
 #define NO_RESPONSE "sc_nr"
 
-//----private variables
+
+//----Module class
 
 class Module {
+	/**
+	 * Correspond to a physical device, allow to send commands and monitor the responses
+	 */
 
 	public:
 
-	bool isWatched;
-	const std::string name;
+	std::string name;
 
-	Module(bool isWatched, const std::string name, const int fd, const struct termios oldAttr):
-		isWatched{isWatched}, name{name}, fileDescriptor{fd}, oldAttr{oldAttr} {}
+	Module(const std::string name, const int fd, const struct termios oldAttr):
+		name{name}, fileDescriptor{fd}, oldAttr{oldAttr} {}
 
+	/**
+	 * send a command to the device and check for a response
+	 */
 	std::string sendCommand(const std::string& cmd) const;
-	int watch(void callback(const std::string& cmd)) const; 
+	/**
+	 * set a lambda function that will be called in the update function when the device emit a message
+	 */
+	int watch(void callback(const std::string& cmd)); 
 
 	private:
-	const int fileDescriptor;
-	const struct termios oldAttr;
+	int fileDescriptor;
+	struct termios oldAttr;
+	std::function<void(std::string&)> callback;
+	
+	/**
+ 	* check all watched modules and execute the lambda associed
+ 	*/
+	friend int update();
 
 };
+
+
+//----private variables
+
+namespace {
+
+	//TODO find a proper implementation
+	std::vector<Module> moduleList;
+
+}
 
 
 //----functions
@@ -52,13 +79,9 @@ class Module {
  * Update the list of modules connected
  * return value : a list of the modules names (given by the modules)
  */
-std::vector<Module> listModules();
+std::vector<Module*> listModules();
 
-/**
- * checked alll watched modules and return a list of all the reponses found
- * with the name of the module that send them
- */
-std::vector<std::tuple<std::string,std::string>> update();
+int update();
 
 } //namespace SerialControl
 

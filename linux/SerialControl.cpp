@@ -17,9 +17,13 @@ char paths[][14] = {"/dev/ttyUSB00","/dev/ttyACM00"};
 
 //----functions
 
-std::vector<Module> listModules(){
+std::vector<Module*> listModules(){
+	
+	//TODO find a way to optimise that
+	moduleList.clear();
+	moduleList.reserve(2*MAX_INDEX);
 
-	std::vector<Module> modules;
+	std::vector<Module*> modules;
 
 	//for each paths defined in hpp
 	for(auto &elem: paths) {
@@ -84,9 +88,11 @@ std::vector<Module> listModules(){
 				continue;
 			}
 
-			Module module{false,data,fd,oldAttr};
-			modules.emplace_back(module);
+			Module module{data,fd,oldAttr};
+			moduleList.emplace_back(std::move(module));	//store the module in a list
+			modules.emplace_back(&moduleList.back());	//get the module adress (moving adress issues ?)
 		}
+		
 	}
 
 	return modules;
@@ -125,39 +131,37 @@ Module::sendCommand(const std::string& cmd) const{
 }
 
 
-/*int watch(const std::string& mod) {
-	for(auto &elem: moduleList) {
-		if(elem.name == mod) {
-			elem.watch = true;
-			return 0;
-		}
-	}
-	return 1;
+int 
+Module::watch(void callback(const std::string& cmd)) {
+	this->callback = callback;
+	return 0;
 }
 
 
-std::vector<std::tuple<std::string,std::string>> update() {
-	std::vector<std::tuple<std::string,std::string>> output;
-	for(auto &elem: moduleList) {
-		if(elem.watch) {
-			std::fstream file;
-			file.open(elem.path, std::ios_base::in);
-			if(file.fail()) {
-				if(DEBUG) std::cerr << "unable to open communication with " << elem.name << '\n';
-				continue;
+int update() {
+
+	int nbResp = 0;
+
+	for(const auto &elem: moduleList) {
+		if(elem.callback) {
+			char response[MAX_MESSAGE_SIZE];
+			const ssize_t n = read(elem.fileDescriptor,&response,MAX_MESSAGE_SIZE);
+			if(n>0) {
+				std::string tmpStr{response};
+				elem.callback(tmpStr);
+				nbResp++;
 			}
-			if(isEmpty(file)){
-				file.close();
-				continue;
+			else if(n==0) {
+				std::string tmpStr{NO_RESPONSE};
+				elem.callback(tmpStr);
 			}
-			std::string response;
-			file >> response;
-			output.emplace_back(std::make_tuple(elem.name,response));
+			else if(DEBUG) std::cerr << "Could not read message from " << elem.name << '\n';
 		}
+
 	}
-	return output;
+	return nbResp;
 }
-*/
+
 
 } //namespace SerialControl
 
