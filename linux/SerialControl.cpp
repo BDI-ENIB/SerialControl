@@ -3,84 +3,96 @@
 
 //----standard libs
 #include <iostream>
-#include <exception>
-#include <thread>
-#include <chrono>
-#include <string.h>
 
+//----c libs
+#include <termios.h>
+#include <sys/stat.h>	//open parameters
+#include <fcntl.h>		//open function
+#include <unistd.h>		//write function
 
 namespace SerialControl {
 
-//----configuration values (macros for now)
-
-
-using namespace std::chrono;
-
-//----internal functions
-
-namespace {
-
-	bool isEmpty(std::fstream& file) {
-    	return file.peek() == std::fstream::traits_type::eof();
-	}
-}
+char paths[][14] = {"/dev/ttyUSB00","/dev/ttyACM00"};
 
 
 //----functions
 
-std::vector<std::string> updateModules(){
+std::vector<Module> listModules(){
 
-	std::vector<std::string> moduleNames;
+	std::vector<Module> modules;
 
-	//for each path to check
-	for(const auto& basePath: paths) {
+	//for each paths defined in hpp
+	for(auto &elem: paths) {
 
-		//for each USB module connected
 		for(int i=0; i<=MAX_INDEX; i++) {
-			
-			//setup
-			std::string path = basePath + std::to_string(i);
-			std::fstream file;
-			Module mod;
 
-			//open connection
-			file.open(path, std::ios_base::in|std::ios_base::out);
-			if(file.fail()) {
-				if(DEBUG) std::cout << "debug:unable to open " << path  << '\n';
+			//TODO find a way to tidy that and stop warnings
+			if(i/10) { 
+				elem[11] = i/10 + '0';
+				elem[12] = i%10 + '0';
+			} else {
+				elem[11] = i%10 + '0';
+				elem[12] = '\0';
+			}
+
+			if(DEBUG) std::cout << elem << '\n';
+
+			//open file in R/W and without linking it to a terminal
+			const int fd = open(elem, O_RDWR | O_NOCTTY);
+			if(!fd) {
+				if(DEBUG) std::cerr << "Could not open " << elem << '\n'; 
 				continue;
 			}
-			mod.path = path;
 
-			//send name request
-			file.write("whois;",6);
-
-			//receive name request response
-			std::string response;
-			char str[2] = "";
-			
-			while(file.read(str,1)) {
-				std::cout << str << '\n';
-				if(!strcmp(str,";")) { break; }
-				response.push_back(*str);
+			//store default config to reapply it when communication end
+			struct termios oldAttr;
+			if(tcgetattr(fd, &oldAttr)) {
+				if(DEBUG) std::cerr << "Could not get config for " << elem << '\n'; 
+				continue;
 			}
 
-			if(!file.fail()) {
-				mod.name = response;
-				moduleList.emplace_back(mod);
-				moduleNames.emplace_back(response);
-			}
-			
-			//because magic
-			std::this_thread::sleep_for(5s);
+			//configuration, for more informations see
+			//https://www.ibm.com/support/knowledgecenter/SSLTBW_2.1.0/com.ibm.zos.v2r1.bpxbd00/rttcsa.htm#rttcsa
+			struct termios newAttr = oldAttr;
+			cfsetispeed(&newAttr, BAUDRATE);
+			cfsetospeed(&newAttr, BAUDRATE);
+			newAttr.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+			newAttr.c_oflag &= ~OPOST;
+			newAttr.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+			newAttr.c_cflag &= ~(CSIZE | PARENB | HUPCL);
+			newAttr.c_cflag |= CS8;
+			newAttr.c_cc[VMIN]  = 50; 	//these two line are related to the kernel timeout
+			newAttr.c_cc[VTIME] = 10;
 
-			//end connection
-			file.close();
+			//apply previously set configuration to file
+			if(tcsetattr(fd, TCSANOW, &newAttr)) {
+				if(DEBUG) std::cerr << "Could not apply config for " << elem << '\n';
+				continue;
+			}
+
+			//clear the file
+			tcflush(fd,TCIOFLUSH);
+
+			if(write(fd,"whois;",6) != 6) {
+				if(DEBUG) std::cerr << "Could not write whois message for " << elem << '\n';
+				continue;
+			}
+
+			char data[MAX_MESSAGE_SIZE];
+			if(read(fd,data,MAX_MESSAGE_SIZE) < 0) {
+				if(DEBUG) std::cerr << "Could not read message from " << elem << '\n';
+				continue;
+			}
+
+			Module module{false,data,fd,oldAttr};
+			modules.emplace_back(module);
 		}
 	}
-	return moduleNames;
 
+	return modules;
 }
 
+/*
 
 std::string sendCommand(const std::string& cmd, const std::string& mod) {
 	for(auto &elem: moduleList) {
@@ -147,7 +159,7 @@ std::vector<std::tuple<std::string,std::string>> update() {
 	}
 	return output;
 }
-
+*/
 
 } //namespace SerialControl
 

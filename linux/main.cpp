@@ -5,13 +5,13 @@
 
 int main() {
 
-	auto modules = SerialControl::updateModules();
+	auto modules = SerialControl::listModules();
 	for(const auto &elem: modules) {
-		std::cout << elem << '\n';
+		std::cout << elem.name << '\n';
 	}
-	for(const auto &elem: modules) {
+	/*for(const auto &elem: modules) {
 		std::cout << elem << ": " << SerialControl::sendCommand("whois;",elem) << '\n';
-	}
+	}*/
 	return 0;
 }
 

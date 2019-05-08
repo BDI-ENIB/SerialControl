@@ -7,30 +7,38 @@
 #include <fstream>
 #include <tuple>
 
+//----c libs
+#include <termios.h>
+
 namespace SerialControl {
 
 //----configuration values (macros for now)
 
 #define MAX_INDEX 10
-#define TIMEOUT 10
+#define MAX_MESSAGE_SIZE 256 //in number of chars
 #define DEBUG 1
-#define ERROR 1
+#define BAUDRATE 9600
 
 
 //----private variables
 
-namespace {
+class Module {
 
-	typedef struct {
-		bool watch = false;
-		std::string name = "no_device";
-		std::string path = "";
-	} Module;
+	public:
 
-	std::vector<Module> moduleList;
-	std::vector<std::string> paths = {"/dev/ttyUSB","/dev/ttyACM"};
+	bool watch;
+	const std::string name;
 
-}
+	Module(bool watch, const std::string name, const int fd, const struct termios oldAttr):
+		watch{watch}, name{name}, fileDescriptor{fd}, oldAttr{oldAttr} {}
+
+	private:
+	const int fileDescriptor;
+	const struct termios oldAttr;
+
+};
+
+
 
 
 //----functions
@@ -39,7 +47,7 @@ namespace {
  * Update the list of modules connected
  * return value : a list of the modules names (given by the modules)
  */
-std::vector<std::string> updateModules();
+std::vector<Module> listModules();
 
 /**
  * Send a command to the specified module
