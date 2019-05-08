@@ -92,42 +92,40 @@ std::vector<Module> listModules(){
 	return modules;
 }
 
-/*
 
-std::string sendCommand(const std::string& cmd, const std::string& mod) {
-	for(auto &elem: moduleList) {
-		if(elem.name == mod) {
+std::string 
+Module::sendCommand(const std::string& cmd) const{
 
-			//setup
-			std::fstream file;
+	//TODO add support for commands longer than MAX_MESSAGE_SIZE
+	const ssize_t size = cmd.size();
+	const char* data = cmd.c_str();
 
-			//open connection
-			file.open(elem.path, std::ios_base::in|std::ios_base::out);
-			if(file.fail()) {
-				if(ERROR) std::cerr << "unable to open communication with " << elem.name << '\n';
-				continue;
-			}
-
-			//send command
-			file << cmd << std::endl;
-
-			//receive response
-			std::string response;
-			file >> response;
-			
-			//because magic
-			std::this_thread::sleep_for(2s);
-
-			//file.close is called implicitly
-
-			return response;
-		}
+	//write to device, try WRITE_TRY_NB before giving up
+	int i;
+	for(i=0; write(this->fileDescriptor,data,size) != size && i < WRITE_TRY_NB; i++) {}
+	if(i == WRITE_TRY_NB) {
+		if(DEBUG) std::cerr << "Could not write message to " << this->name << '\n';
+		return WRITE_FAIL;
 	}
-	return "no_response";
+
+	//read from device, try READ_TRY_NB beofre giving up
+	char response[MAX_MESSAGE_SIZE];
+	ssize_t n = 0;
+	for(i=0; i < READ_TRY_NB; i++) {
+		n = read(this->fileDescriptor,&response,MAX_MESSAGE_SIZE);
+		if(n > 0) break;
+	}
+	if(i == READ_TRY_NB) {
+		if(n == 0) return NO_RESPONSE;
+		else if(DEBUG) std::cerr << "Could not read message from " << this->name << '\n';
+		return READ_FAIL;
+	}
+
+	return std::string{response};
 }
 
 
-int watch(const std::string& mod) {
+/*int watch(const std::string& mod) {
 	for(auto &elem: moduleList) {
 		if(elem.name == mod) {
 			elem.watch = true;
