@@ -9,6 +9,7 @@
 #include <sys/stat.h>	//open parameters
 #include <fcntl.h>		//open function
 #include <unistd.h>		//write function
+#include <string.h> 	//strtok function
 
 namespace SerialControl {
 
@@ -32,10 +33,10 @@ std::vector<Module*> listModules(){
 
 			//TODO find a way to tidy that and stop warnings
 			if(i/10) { 
-				elem[11] = i/10 + '0';
-				elem[12] = i%10 + '0';
+				elem[11] = char(i/10 + '0');
+				elem[12] = char(i%10 + '0');
 			} else {
-				elem[11] = i%10 + '0';
+				elem[11] = char(i%10 + '0');
 				elem[12] = '\0';
 			}
 
@@ -82,11 +83,13 @@ std::vector<Module*> listModules(){
 				continue;
 			}
 
-			char data[MAX_MESSAGE_SIZE];
-			if(read(fd,data,MAX_MESSAGE_SIZE) < 0) {
+			char rawData[MAX_MESSAGE_SIZE];
+			if(read(fd,rawData,MAX_MESSAGE_SIZE) < 0) {
 				if(DEBUG) std::cerr << "Could not read message from " << elem << '\n';
 				continue;
 			}
+			
+			char* data = strtok(rawData,";");
 
 			Module module{data,fd,oldAttr};
 			moduleList.emplace_back(std::move(module));	//store the module in a list
@@ -104,21 +107,21 @@ Module::sendCommand(const std::string& cmd) const{
 
 	//TODO add support for commands longer than MAX_MESSAGE_SIZE
 	const ssize_t size = cmd.size();
-	const char* data = cmd.c_str();
+	const char* inData = cmd.c_str();
 
 	//write to device, try WRITE_TRY_NB before giving up
 	int i;
-	for(i=0; write(this->fileDescriptor,data,size) != size && i < WRITE_TRY_NB; i++) {}
+	for(i=0; write(this->fileDescriptor,inData,size) != size && i < WRITE_TRY_NB; i++) {}
 	if(i == WRITE_TRY_NB) {
 		if(DEBUG) std::cerr << "Could not write message to " << this->name << '\n';
 		return WRITE_FAIL;
 	}
 
 	//read from device, try READ_TRY_NB beofre giving up
-	char response[MAX_MESSAGE_SIZE];
+	char rawData[MAX_MESSAGE_SIZE];
 	ssize_t n = 0;
 	for(i=0; i < READ_TRY_NB; i++) {
-		n = read(this->fileDescriptor,&response,MAX_MESSAGE_SIZE);
+		n = read(this->fileDescriptor,&rawData,MAX_MESSAGE_SIZE);
 		if(n > 0) break;
 	}
 	if(i == READ_TRY_NB) {
@@ -127,7 +130,8 @@ Module::sendCommand(const std::string& cmd) const{
 		return READ_FAIL;
 	}
 
-	return std::string{response};
+	char* outData = strtok(rawData, ";");
+	return std::string{outData};
 }
 
 
@@ -144,12 +148,15 @@ int update() {
 
 	for(const auto &elem: moduleList) {
 		if(elem.callback) {
-			char response[MAX_MESSAGE_SIZE];
-			const ssize_t n = read(elem.fileDescriptor,&response,MAX_MESSAGE_SIZE);
+			char rawData[MAX_MESSAGE_SIZE];
+			const ssize_t n = read(elem.fileDescriptor,&rawData,MAX_MESSAGE_SIZE);
 			if(n>0) {
-				std::string tmpStr{response};
-				elem.callback(tmpStr);
-				nbResp++;
+				while(*rawData != '\0') {
+					char* data = strtok(rawData,";");
+					std::string tmpStr{data};
+					elem.callback(tmpStr);
+					nbResp++;
+				}
 			}
 			else if(n==0) {
 				std::string tmpStr{NO_RESPONSE};
