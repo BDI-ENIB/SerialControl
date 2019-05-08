@@ -1,47 +1,165 @@
-//lib header
+//----lib header
 #include "SerialControl.hpp"
 
-//standard libs
+//----standard libs
 #include <iostream>
-#include <fstream>
-#include <exception>
-//#include <chrono>
-//#include <thread>
+
+//----c libs
+#include <termios.h>
+#include <sys/stat.h>	//open parameters
+#include <fcntl.h>		//open function
+#include <unistd.h>		//write function
 
 namespace SerialControl {
 
-//using namespace std::chrono_literals;
+char paths[][14] = {"/dev/ttyUSB00","/dev/ttyACM00"};
 
-#define MAX_INDEX 10
-#define TIMEOUT 10
 
-std::vector<std::string> initModules() {
-	std::vector<std::string> list;
+//----functions
 
-	//for each USB module connected
-	for(int i=0; i<=MAX_INDEX; i++) {
-		
-		std::string path = "/dev/ttyACM" + std::to_string(i);
-		std::fstream file;
-		//std::this_thread::sleep_for(0.06s); //necesserry when using open quikly
-		try { file.open(path, std::ios_base::in|std::ios_base::out); }
-		catch(std::exception& e) { std::cerr << e.what(); }
-		if(file.fail()) {
-			std::cerr << "unable to open " << path << '\n';
+std::vector<Module*> listModules(){
+	
+	//TODO find a way to optimise that
+	moduleList.clear();
+	moduleList.reserve(2*MAX_INDEX);
+
+	std::vector<Module*> modules;
+
+	//for each paths defined in hpp
+	for(auto &elem: paths) {
+
+		for(int i=0; i<=MAX_INDEX; i++) {
+
+			//TODO find a way to tidy that and stop warnings
+			if(i/10) { 
+				elem[11] = i/10 + '0';
+				elem[12] = i%10 + '0';
+			} else {
+				elem[11] = i%10 + '0';
+				elem[12] = '\0';
+			}
+
+			if(DEBUG) std::cout << elem << '\n';
+
+			//open file in R/W and without linking it to a terminal
+			const int fd = open(elem, O_RDWR | O_NOCTTY);
+			if(!fd) {
+				if(DEBUG) std::cerr << "Could not open " << elem << '\n'; 
+				continue;
+			}
+
+			//store default config to reapply it when communication end
+			struct termios oldAttr;
+			if(tcgetattr(fd, &oldAttr)) {
+				if(DEBUG) std::cerr << "Could not get config for " << elem << '\n'; 
+				continue;
+			}
+
+			//configuration, for more informations see
+			//https://www.ibm.com/support/knowledgecenter/SSLTBW_2.1.0/com.ibm.zos.v2r1.bpxbd00/rttcsa.htm#rttcsa
+			struct termios newAttr = oldAttr;
+			cfsetispeed(&newAttr, BAUDRATE);
+			cfsetospeed(&newAttr, BAUDRATE);
+			newAttr.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+			newAttr.c_oflag &= ~OPOST;
+			newAttr.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+			newAttr.c_cflag &= ~(CSIZE | PARENB | HUPCL);
+			newAttr.c_cflag |= CS8;
+			newAttr.c_cc[VMIN]  = 50; 	//these two line are related to the kernel timeout
+			newAttr.c_cc[VTIME] = 10;
+
+			//apply previously set configuration to file
+			if(tcsetattr(fd, TCSANOW, &newAttr)) {
+				if(DEBUG) std::cerr << "Could not apply config for " << elem << '\n';
+				continue;
+			}
+
+			//clear the file
+			tcflush(fd,TCIOFLUSH);
+
+			if(write(fd,"whois;",6) != 6) {
+				if(DEBUG) std::cerr << "Could not write whois message for " << elem << '\n';
+				continue;
+			}
+
+			char data[MAX_MESSAGE_SIZE];
+			if(read(fd,data,MAX_MESSAGE_SIZE) < 0) {
+				if(DEBUG) std::cerr << "Could not read message from " << elem << '\n';
+				continue;
+			}
+
+			Module module{data,fd,oldAttr};
+			moduleList.emplace_back(std::move(module));	//store the module in a list
+			modules.emplace_back(&moduleList.back());	//get the module adress (moving adress issues ?)
 		}
-		file << "whois;" << std::endl;
-		std::string response = "";
-		try {
-			getline(file,response,';');
-		}
-		catch(std::exception& e) {
-			std::cerr << e.what();
-		}
-		file.close();
-		list.emplace_back(response);
 		
 	}
-	return list;
+
+	return modules;
+}
+
+
+std::string 
+Module::sendCommand(const std::string& cmd) const{
+
+	//TODO add support for commands longer than MAX_MESSAGE_SIZE
+	const ssize_t size = cmd.size();
+	const char* data = cmd.c_str();
+
+	//write to device, try WRITE_TRY_NB before giving up
+	int i;
+	for(i=0; write(this->fileDescriptor,data,size) != size && i < WRITE_TRY_NB; i++) {}
+	if(i == WRITE_TRY_NB) {
+		if(DEBUG) std::cerr << "Could not write message to " << this->name << '\n';
+		return WRITE_FAIL;
+	}
+
+	//read from device, try READ_TRY_NB beofre giving up
+	char response[MAX_MESSAGE_SIZE];
+	ssize_t n = 0;
+	for(i=0; i < READ_TRY_NB; i++) {
+		n = read(this->fileDescriptor,&response,MAX_MESSAGE_SIZE);
+		if(n > 0) break;
+	}
+	if(i == READ_TRY_NB) {
+		if(n == 0) return NO_RESPONSE;
+		else if(DEBUG) std::cerr << "Could not read message from " << this->name << '\n';
+		return READ_FAIL;
+	}
+
+	return std::string{response};
+}
+
+
+int 
+Module::watch(void callback(const std::string& cmd)) {
+	this->callback = callback;
+	return 0;
+}
+
+
+int update() {
+
+	int nbResp = 0;
+
+	for(const auto &elem: moduleList) {
+		if(elem.callback) {
+			char response[MAX_MESSAGE_SIZE];
+			const ssize_t n = read(elem.fileDescriptor,&response,MAX_MESSAGE_SIZE);
+			if(n>0) {
+				std::string tmpStr{response};
+				elem.callback(tmpStr);
+				nbResp++;
+			}
+			else if(n==0) {
+				std::string tmpStr{NO_RESPONSE};
+				elem.callback(tmpStr);
+			}
+			else if(DEBUG) std::cerr << "Could not read message from " << elem.name << '\n';
+		}
+
+	}
+	return nbResp;
 }
 
 
