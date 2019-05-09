@@ -20,10 +20,7 @@ char paths[][14] = {"/dev/ttyUSB00","/dev/ttyACM00"};
 
 std::vector<Module*> listModules(){
 	
-	//TODO find a way to optimise that
 	moduleList.clear();
-	moduleList.reserve(2*MAX_INDEX);
-
 	std::vector<Module*> modules;
 
 	//for each paths defined in hpp
@@ -31,7 +28,6 @@ std::vector<Module*> listModules(){
 
 		for(int i=0; i<=MAX_INDEX; i++) {
 
-			//TODO find a way to tidy that and stop warnings
 			if(i/10) { 
 				elem[11] = char(i/10 + '0');
 				elem[12] = char(i%10 + '0');
@@ -74,14 +70,21 @@ std::vector<Module*> listModules(){
 				if(DEBUG) std::cerr << "Could not apply config for " << elem << '\n';
 				continue;
 			}
+			
+			for(int i=0; i<1000000000; i++) {}
 
 			//clear the file
 			tcflush(fd,TCIOFLUSH);
+
+
+			for(int i=0; i<1000000000; i++) {}
 
 			if(write(fd,"whois;",6) != 6) {
 				if(DEBUG) std::cerr << "Could not write whois message for " << elem << '\n';
 				continue;
 			}
+			
+			for(int i=0; i<1000000000; i++) {}
 
 			char rawData[MAX_MESSAGE_SIZE];
 			if(read(fd,rawData,MAX_MESSAGE_SIZE) < 0) {

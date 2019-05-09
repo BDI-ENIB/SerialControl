@@ -4,6 +4,7 @@
 //----standard libs
 #include <string>
 #include <vector>
+#include <list>
 #include <fstream>
 #include <tuple>
 #include <functional>
@@ -67,8 +68,7 @@ class Module {
 
 namespace {
 
-	//TODO find a proper implementation
-	std::vector<Module> moduleList;
+	std::list<Module> moduleList;
 
 }
 
