@@ -3,6 +3,8 @@
 
 //----standard libs
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 //----c libs
 #include <termios.h>
@@ -11,7 +13,25 @@
 #include <unistd.h>		//write function
 #include <string.h> 	//strtok function
 
+
+//----macros
+//
+#if DEBUG
+#define DEBUG_MSG(str) do { std::cout << "DEBUG:" << str << '\n'; } while(false)
+#else
+#define DEBUG_MSG(str) do {} while(false)
+#endif
+
+#if ERROR
+#define ERROR_MSG(str) do { std::cerr << "ERROR:" << str << '\n'; } while(false)
+#else
+#define ERROR_MSG(str) do {} while(false)
+#endif
+
+
 namespace SerialControl {
+
+using namespace std::chrono_literals;
 
 char paths[][14] = {"/dev/ttyUSB00","/dev/ttyACM00"};
 
@@ -24,7 +44,7 @@ std::vector<Module*> listModules(){
 	std::vector<Module*> modules;
 
 	//for each paths defined in hpp
-	for(auto &elem: paths) {
+	for(auto &elem: paths)	{
 
 		for(int i=0; i<=MAX_INDEX; i++) {
 
@@ -36,19 +56,19 @@ std::vector<Module*> listModules(){
 				elem[12] = '\0';
 			}
 
-			if(DEBUG) std::cout << elem << '\n';
+			DEBUG_MSG(elem); 
 
 			//open file in R/W and without linking it to a terminal
 			const int fd = open(elem, O_RDWR | O_NOCTTY);
 			if(!fd) {
-				if(DEBUG) std::cerr << "Could not open " << elem << '\n'; 
+				DEBUG_MSG("Could not open " << elem); 
 				continue;
 			}
 
 			//store default config to reapply it when communication end
 			struct termios oldAttr;
 			if(tcgetattr(fd, &oldAttr)) {
-				if(DEBUG) std::cerr << "Could not get config for " << elem << '\n'; 
+				DEBUG_MSG("Could not get config for " << elem); 
 				continue;
 			}
 
@@ -57,46 +77,54 @@ std::vector<Module*> listModules(){
 			struct termios newAttr = oldAttr;
 			cfsetispeed(&newAttr, BAUDRATE);
 			cfsetospeed(&newAttr, BAUDRATE);
-			newAttr.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-			newAttr.c_oflag &= ~OPOST;
-			newAttr.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-			newAttr.c_cflag &= ~(CSIZE | PARENB | HUPCL);
-			newAttr.c_cflag |= CS8;
-			newAttr.c_cc[VMIN]  = 50; 	//these two line are related to the kernel timeout
-			newAttr.c_cc[VTIME] = 10;
+			cfmakeraw(&newAttr);
+			newAttr.c_cflag |= CS8;		//8 bits chars
+			newAttr.c_cc[VMIN]  = 10; 	//number of chars read() wait for (0 means read() don't block)
+			newAttr.c_cc[VTIME] = SERIAL_TIMEOUT;	//read timeout time (in 0.1 of secs)
 
 			//apply previously set configuration to file
 			if(tcsetattr(fd, TCSANOW, &newAttr)) {
-				if(DEBUG) std::cerr << "Could not apply config for " << elem << '\n';
+				DEBUG_MSG("Could not apply config for " << elem);
 				continue;
 			}
 			
-			for(int i=0; i<1000000000; i++) {}
-
 			//clear the file
 			tcflush(fd,TCIOFLUSH);
 
-
-			for(int i=0; i<1000000000; i++) {}
+			//nanos are painfully slow, this help them realize that there is a serial...
+			std::this_thread::sleep_for(2s);
 
 			if(write(fd,"whois;",6) != 6) {
-				if(DEBUG) std::cerr << "Could not write whois message for " << elem << '\n';
+				DEBUG_MSG("Could not write whois message for " << elem);
 				continue;
 			}
-			
-			for(int i=0; i<1000000000; i++) {}
 
 			char rawData[MAX_MESSAGE_SIZE];
 			if(read(fd,rawData,MAX_MESSAGE_SIZE) < 0) {
-				if(DEBUG) std::cerr << "Could not read message from " << elem << '\n';
+				DEBUG_MSG("Could not read message from " << elem);
 				continue;
 			}
+			DEBUG_MSG(rawData);
 			
-			char* data = strtok(rawData,";");
+			char* savePtr;
+			char* data = strtok_r(rawData,";",&savePtr); //strtok_r is a thread-safe strtok
+			if(data == NULL) {
+				ERROR_MSG("Could not parse name of " << elem);
+				continue;
+			}
 
+			DEBUG_MSG("whois : " << data);
 			Module module{data,fd,oldAttr};
 			moduleList.emplace_back(std::move(module));	//store the module in a list
 			modules.emplace_back(&moduleList.back());	//get the module adress (moving adress issues ?)
+
+			newAttr.c_cc[VMIN]  = 0;	//the nano has used serial a first time, it will be faster now 
+			if(tcsetattr(fd, TCSANOW, &newAttr)) {
+				DEBUG_MSG("Could not apply config for " << elem);
+				continue;
+			}
+			tcflush(fd,TCIOFLUSH);
+
 		}
 		
 	}
@@ -116,7 +144,7 @@ Module::sendCommand(const std::string& cmd) const{
 	int i;
 	for(i=0; write(this->fileDescriptor,inData,size) != size && i < WRITE_TRY_NB; i++) {}
 	if(i == WRITE_TRY_NB) {
-		if(DEBUG) std::cerr << "Could not write message to " << this->name << '\n';
+		ERROR_MSG("Could not write message to " << this->name);
 		return WRITE_FAIL;
 	}
 
@@ -129,11 +157,12 @@ Module::sendCommand(const std::string& cmd) const{
 	}
 	if(i == READ_TRY_NB) {
 		if(n == 0) return NO_RESPONSE;
-		else if(DEBUG) std::cerr << "Could not read message from " << this->name << '\n';
+		else ERROR_MSG("Could not read message from " << this->name);
 		return READ_FAIL;
 	}
 
-	char* outData = strtok(rawData, ";");
+	char* savePtr;
+	char* outData = strtok_r(rawData, ";",&savePtr);
 	return std::string{outData};
 }
 
@@ -154,18 +183,23 @@ int update() {
 			char rawData[MAX_MESSAGE_SIZE];
 			const ssize_t n = read(elem.fileDescriptor,&rawData,MAX_MESSAGE_SIZE);
 			if(n>0) {
-				while(*rawData != '\0') {
-					char* data = strtok(rawData,";");
+				char* savePtr;	//used to save strtok_r() contex for futur calls
+				char* data = strtok_r(rawData,";",&savePtr); //separate response at the first ";"
+				std::string tmpStr{data};
+				elem.callback(tmpStr);	//passing response to user's function
+				nbResp++;
+				data = strtok_r(NULL,";",&savePtr); //separate response another time
+				while(data != NULL) {	//NULL signifies that there no more ";"
 					std::string tmpStr{data};
 					elem.callback(tmpStr);
 					nbResp++;
+					data = strtok_r(NULL,";",&savePtr);
 				}
 			}
 			else if(n==0) {
-				std::string tmpStr{NO_RESPONSE};
-				elem.callback(tmpStr);
+				DEBUG_MSG("no message from " << elem.name);
 			}
-			else if(DEBUG) std::cerr << "Could not read message from " << elem.name << '\n';
+			else ERROR_MSG("Could not read message from " << elem.name);
 		}
 
 	}

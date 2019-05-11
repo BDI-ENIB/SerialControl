@@ -2,6 +2,10 @@
 
 #include <iostream>
 #include <vector>
+#include <chrono>
+#include <thread>
+
+using namespace std::chrono_literals;
 
 int main() {
 
@@ -9,8 +13,10 @@ int main() {
 	for(const auto &elem: modules) {
 		std::cout << elem->name << '\n';
 		for(int i=0; i<10; i++) {
-			std::cout << elem->sendCommand("whois;") << '\n';
+			std::cout << i << ": " <<  elem->sendCommand("whois;") << '\n';
+			for(int j=0; j<100000000; j++) {}
 		}
+		std::cout << elem->sendCommand("Spam;") << '\n';
 		elem->watch([](const std::string& str) { std::cout << str << '\n'; });
 	}
 
