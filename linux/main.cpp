@@ -2,15 +2,21 @@
 
 #include <iostream>
 #include <vector>
+#include <chrono>
+#include <thread>
+
+using namespace std::chrono_literals;
 
 int main() {
 
 	auto modules = SerialControl::listModules();
 	for(const auto &elem: modules) {
 		std::cout << elem->name << '\n';
-		for(int i=0; i<10; i++) {
-			std::cout << elem->sendCommand("whois;") << '\n';
+		for(int i=0; i<2; i++) {
+			std::cout << i << ": " <<  elem->sendCommand("whois;") << '\n';
+			for(int j=0; j<100000000; j++) {}
 		}
+		std::cout << elem->sendCommand("activate;") << '\n';
 		elem->watch([](const std::string& str) { std::cout << str << '\n'; });
 	}
 

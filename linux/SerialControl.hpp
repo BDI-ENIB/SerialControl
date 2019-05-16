@@ -4,6 +4,7 @@
 //----standard libs
 #include <string>
 #include <vector>
+#include <list>
 #include <fstream>
 #include <tuple>
 #include <functional>
@@ -19,12 +20,13 @@ namespace SerialControl {
 #define MAX_INDEX 10
 #define MAX_MESSAGE_SIZE 256 //in number of chars
 #define WRITE_TRY_NB 3 	//number of time SerialControl will retry in case of fail while writing
-#define READ_TRY_NB 3 //same but in for reading
-#define DEBUG 1
-#define BAUDRATE 9600
+#define DEBUG 0
+#define ERROR 1
+#define BAUDRATE B2000000
 #define WRITE_FAIL "sc_wf"
 #define READ_FAIL "sc_rf"
 #define NO_RESPONSE "sc_nr"
+#define SERIAL_TIMEOUT 1 //read timeout time (in 0.1 of secs) 
 
 
 //----Module class
@@ -67,8 +69,7 @@ class Module {
 
 namespace {
 
-	//TODO find a proper implementation
-	std::vector<Module> moduleList;
+	std::list<Module> moduleList;
 
 }
 

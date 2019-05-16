@@ -3,6 +3,8 @@
 
 //----standard libs
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 //----c libs
 #include <termios.h>
@@ -11,27 +13,56 @@
 #include <unistd.h>		//write function
 #include <string.h> 	//strtok function
 
+
+//----macros
+//
+#if DEBUG
+#define DEBUG_MSG(str) do { std::cout << "DEBUG:" << str << '\n'; } while(false)
+#else
+#define DEBUG_MSG(str) do {} while(false)
+#endif
+
+#if ERROR
+#define ERROR_MSG(str) do { std::cerr << "ERROR:" << str << '\n'; } while(false)
+#else
+#define ERROR_MSG(str) do {} while(false)
+#endif
+
+
 namespace SerialControl {
+
+using namespace std::chrono_literals;
 
 char paths[][14] = {"/dev/ttyUSB00","/dev/ttyACM00"};
 
+
+//----internal functions
+
+int readMessage(int fd, char* data) {
+	char byte;
+	int n = 0;
+	while(read(fd,&byte,1)>0 && byte != ';' && n<MAX_MESSAGE_SIZE) {
+		data[n] = byte;
+		n++;
+	}
+	if(n==MAX_MESSAGE_SIZE) return -1;
+	data[n] = '\0';
+	DEBUG_MSG(data);
+	return n;
+}
 
 //----functions
 
 std::vector<Module*> listModules(){
 	
-	//TODO find a way to optimise that
 	moduleList.clear();
-	moduleList.reserve(2*MAX_INDEX);
-
 	std::vector<Module*> modules;
 
 	//for each paths defined in hpp
-	for(auto &elem: paths) {
+	for(auto &elem: paths)	{
 
 		for(int i=0; i<=MAX_INDEX; i++) {
 
-			//TODO find a way to tidy that and stop warnings
 			if(i/10) { 
 				elem[11] = char(i/10 + '0');
 				elem[12] = char(i%10 + '0');
@@ -40,19 +71,19 @@ std::vector<Module*> listModules(){
 				elem[12] = '\0';
 			}
 
-			if(DEBUG) std::cout << elem << '\n';
+			DEBUG_MSG(elem); 
 
 			//open file in R/W and without linking it to a terminal
 			const int fd = open(elem, O_RDWR | O_NOCTTY);
 			if(!fd) {
-				if(DEBUG) std::cerr << "Could not open " << elem << '\n'; 
+				DEBUG_MSG("Could not open " << elem); 
 				continue;
 			}
 
 			//store default config to reapply it when communication end
 			struct termios oldAttr;
 			if(tcgetattr(fd, &oldAttr)) {
-				if(DEBUG) std::cerr << "Could not get config for " << elem << '\n'; 
+				DEBUG_MSG("Could not get config for " << elem); 
 				continue;
 			}
 
@@ -61,39 +92,36 @@ std::vector<Module*> listModules(){
 			struct termios newAttr = oldAttr;
 			cfsetispeed(&newAttr, BAUDRATE);
 			cfsetospeed(&newAttr, BAUDRATE);
-			newAttr.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-			newAttr.c_oflag &= ~OPOST;
-			newAttr.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-			newAttr.c_cflag &= ~(CSIZE | PARENB | HUPCL);
-			newAttr.c_cflag |= CS8;
-			newAttr.c_cc[VMIN]  = 50; 	//these two line are related to the kernel timeout
-			newAttr.c_cc[VTIME] = 10;
+			cfmakeraw(&newAttr);
+			newAttr.c_cflag &= ~HUPCL; 	//disable hang-up on close, otherwise the nanos reset themselves
+			newAttr.c_cflag |= CS8;		//8 bits chars
+			newAttr.c_cc[VMIN]  = 0; 	//number of chars read() wait for (0 means read() don't block)
+			newAttr.c_cc[VTIME] = SERIAL_TIMEOUT;	//read timeout time (in 0.1 of secs)
 
 			//apply previously set configuration to file
 			if(tcsetattr(fd, TCSANOW, &newAttr)) {
-				if(DEBUG) std::cerr << "Could not apply config for " << elem << '\n';
+				DEBUG_MSG("Could not apply config for " << elem);
 				continue;
 			}
-
+			
 			//clear the file
 			tcflush(fd,TCIOFLUSH);
 
 			if(write(fd,"whois;",6) != 6) {
-				if(DEBUG) std::cerr << "Could not write whois message for " << elem << '\n';
+				DEBUG_MSG("Could not write whois message for " << elem);
 				continue;
 			}
 
-			char rawData[MAX_MESSAGE_SIZE];
-			if(read(fd,rawData,MAX_MESSAGE_SIZE) < 0) {
-				if(DEBUG) std::cerr << "Could not read message from " << elem << '\n';
-				continue;
+			char data[MAX_MESSAGE_SIZE];
+			if(readMessage(fd,data)<=0){
+				DEBUG_MSG("Could not get message from " << elem << '\n');
 			}
-			
-			char* data = strtok(rawData,";");
 
+			DEBUG_MSG("whois : " << data);
 			Module module{data,fd,oldAttr};
 			moduleList.emplace_back(std::move(module));	//store the module in a list
 			modules.emplace_back(&moduleList.back());	//get the module adress (moving adress issues ?)
+
 		}
 		
 	}
@@ -113,25 +141,17 @@ Module::sendCommand(const std::string& cmd) const{
 	int i;
 	for(i=0; write(this->fileDescriptor,inData,size) != size && i < WRITE_TRY_NB; i++) {}
 	if(i == WRITE_TRY_NB) {
-		if(DEBUG) std::cerr << "Could not write message to " << this->name << '\n';
+		ERROR_MSG("Could not write message to " << this->name);
 		return WRITE_FAIL;
 	}
+	
+	char data[MAX_MESSAGE_SIZE];
+	const int n = readMessage(this->fileDescriptor,data);
 
-	//read from device, try READ_TRY_NB beofre giving up
-	char rawData[MAX_MESSAGE_SIZE];
-	ssize_t n = 0;
-	for(i=0; i < READ_TRY_NB; i++) {
-		n = read(this->fileDescriptor,&rawData,MAX_MESSAGE_SIZE);
-		if(n > 0) break;
-	}
-	if(i == READ_TRY_NB) {
-		if(n == 0) return NO_RESPONSE;
-		else if(DEBUG) std::cerr << "Could not read message from " << this->name << '\n';
-		return READ_FAIL;
-	}
-
-	char* outData = strtok(rawData, ";");
-	return std::string{outData};
+	if(n>0) { return std::string{data}; }
+	if(!n) { return std::string{NO_RESPONSE}; }
+	DEBUG_MSG("Could not get message from " << this->name << '\n');
+	return READ_FAIL;
 }
 
 
@@ -148,24 +168,21 @@ int update() {
 
 	for(const auto &elem: moduleList) {
 		if(elem.callback) {
-			char rawData[MAX_MESSAGE_SIZE];
-			const ssize_t n = read(elem.fileDescriptor,&rawData,MAX_MESSAGE_SIZE);
-			if(n>0) {
-				while(*rawData != '\0') {
-					char* data = strtok(rawData,";");
-					std::string tmpStr{data};
-					elem.callback(tmpStr);
-					nbResp++;
-				}
-			}
-			else if(n==0) {
-				std::string tmpStr{NO_RESPONSE};
-				elem.callback(tmpStr);
-			}
-			else if(DEBUG) std::cerr << "Could not read message from " << elem.name << '\n';
-		}
+			char data[MAX_MESSAGE_SIZE];
+			const int n = readMessage(elem.fileDescriptor,data);
 
+			std::string tmp;
+			if(n>0) tmp = std::string{data};
+			else if(!n) tmp = NO_RESPONSE;
+			else {
+				tmp = READ_FAIL;
+				ERROR_MSG("message to long from " << elem.name << '\n');
+			}
+			DEBUG_MSG(tmp);
+			elem.callback(tmp);
+		}
 	}
+
 	return nbResp;
 }
 
