@@ -20,10 +20,9 @@ namespace SerialControl {
 #define MAX_INDEX 10
 #define MAX_MESSAGE_SIZE 256 //in number of chars
 #define WRITE_TRY_NB 3 	//number of time SerialControl will retry in case of fail while writing
-#define READ_TRY_NB 3 //same but for reading
-#define DEBUG 1
+#define DEBUG 0
 #define ERROR 1
-#define BAUDRATE B9600
+#define BAUDRATE B2000000
 #define WRITE_FAIL "sc_wf"
 #define READ_FAIL "sc_rf"
 #define NO_RESPONSE "sc_nr"

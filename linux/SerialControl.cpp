@@ -36,6 +36,21 @@ using namespace std::chrono_literals;
 char paths[][14] = {"/dev/ttyUSB00","/dev/ttyACM00"};
 
 
+//----internal functions
+
+int readMessage(int fd, char* data) {
+	char byte;
+	int n = 0;
+	while(read(fd,&byte,1)>0 && byte != ';' && n<MAX_MESSAGE_SIZE) {
+		data[n] = byte;
+		n++;
+	}
+	if(n==MAX_MESSAGE_SIZE) return -1;
+	data[n] = '\0';
+	DEBUG_MSG(data);
+	return n;
+}
+
 //----functions
 
 std::vector<Module*> listModules(){
@@ -78,8 +93,9 @@ std::vector<Module*> listModules(){
 			cfsetispeed(&newAttr, BAUDRATE);
 			cfsetospeed(&newAttr, BAUDRATE);
 			cfmakeraw(&newAttr);
+			newAttr.c_cflag &= ~HUPCL; 	//disable hang-up on close, otherwise the nanos reset themselves
 			newAttr.c_cflag |= CS8;		//8 bits chars
-			newAttr.c_cc[VMIN]  = 10; 	//number of chars read() wait for (0 means read() don't block)
+			newAttr.c_cc[VMIN]  = 0; 	//number of chars read() wait for (0 means read() don't block)
 			newAttr.c_cc[VTIME] = SERIAL_TIMEOUT;	//read timeout time (in 0.1 of secs)
 
 			//apply previously set configuration to file
@@ -91,39 +107,20 @@ std::vector<Module*> listModules(){
 			//clear the file
 			tcflush(fd,TCIOFLUSH);
 
-			//nanos are painfully slow, this help them realize that there is a serial...
-			std::this_thread::sleep_for(2s);
-
 			if(write(fd,"whois;",6) != 6) {
 				DEBUG_MSG("Could not write whois message for " << elem);
 				continue;
 			}
 
-			char rawData[MAX_MESSAGE_SIZE];
-			if(read(fd,rawData,MAX_MESSAGE_SIZE) < 0) {
-				DEBUG_MSG("Could not read message from " << elem);
-				continue;
-			}
-			DEBUG_MSG(rawData);
-			
-			char* savePtr;
-			char* data = strtok_r(rawData,";",&savePtr); //strtok_r is a thread-safe strtok
-			if(data == NULL) {
-				ERROR_MSG("Could not parse name of " << elem);
-				continue;
+			char data[MAX_MESSAGE_SIZE];
+			if(readMessage(fd,data)<=0){
+				DEBUG_MSG("Could not get message from " << elem << '\n');
 			}
 
 			DEBUG_MSG("whois : " << data);
 			Module module{data,fd,oldAttr};
 			moduleList.emplace_back(std::move(module));	//store the module in a list
 			modules.emplace_back(&moduleList.back());	//get the module adress (moving adress issues ?)
-
-			newAttr.c_cc[VMIN]  = 0;	//the nano has used serial a first time, it will be faster now 
-			if(tcsetattr(fd, TCSANOW, &newAttr)) {
-				DEBUG_MSG("Could not apply config for " << elem);
-				continue;
-			}
-			tcflush(fd,TCIOFLUSH);
 
 		}
 		
@@ -147,23 +144,14 @@ Module::sendCommand(const std::string& cmd) const{
 		ERROR_MSG("Could not write message to " << this->name);
 		return WRITE_FAIL;
 	}
+	
+	char data[MAX_MESSAGE_SIZE];
+	const int n = readMessage(this->fileDescriptor,data);
 
-	//read from device, try READ_TRY_NB beofre giving up
-	char rawData[MAX_MESSAGE_SIZE];
-	ssize_t n = 0;
-	for(i=0; i < READ_TRY_NB; i++) {
-		n = read(this->fileDescriptor,&rawData,MAX_MESSAGE_SIZE);
-		if(n > 0) break;
-	}
-	if(i == READ_TRY_NB) {
-		if(n == 0) return NO_RESPONSE;
-		else ERROR_MSG("Could not read message from " << this->name);
-		return READ_FAIL;
-	}
-
-	char* savePtr;
-	char* outData = strtok_r(rawData, ";",&savePtr);
-	return std::string{outData};
+	if(n>0) { return std::string{data}; }
+	if(!n) { return std::string{NO_RESPONSE}; }
+	DEBUG_MSG("Could not get message from " << this->name << '\n');
+	return READ_FAIL;
 }
 
 
@@ -180,29 +168,21 @@ int update() {
 
 	for(const auto &elem: moduleList) {
 		if(elem.callback) {
-			char rawData[MAX_MESSAGE_SIZE];
-			const ssize_t n = read(elem.fileDescriptor,&rawData,MAX_MESSAGE_SIZE);
-			if(n>0) {
-				char* savePtr;	//used to save strtok_r() contex for futur calls
-				char* data = strtok_r(rawData,";",&savePtr); //separate response at the first ";"
-				std::string tmpStr{data};
-				elem.callback(tmpStr);	//passing response to user's function
-				nbResp++;
-				data = strtok_r(NULL,";",&savePtr); //separate response another time
-				while(data != NULL) {	//NULL signifies that there no more ";"
-					std::string tmpStr{data};
-					elem.callback(tmpStr);
-					nbResp++;
-					data = strtok_r(NULL,";",&savePtr);
-				}
-			}
-			else if(n==0) {
-				DEBUG_MSG("no message from " << elem.name);
-			}
-			else ERROR_MSG("Could not read message from " << elem.name);
-		}
+			char data[MAX_MESSAGE_SIZE];
+			const int n = readMessage(elem.fileDescriptor,data);
 
+			std::string tmp;
+			if(n>0) tmp = std::string{data};
+			else if(!n) tmp = NO_RESPONSE;
+			else {
+				tmp = READ_FAIL;
+				ERROR_MSG("message to long from " << elem.name << '\n');
+			}
+			DEBUG_MSG(tmp);
+			elem.callback(tmp);
+		}
 	}
+
 	return nbResp;
 }
 
