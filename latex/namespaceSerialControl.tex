@@ -1,0 +1,59 @@
+\hypertarget{namespaceSerialControl}{}\section{Serial\+Control Namespace Reference}
+\label{namespaceSerialControl}\index{SerialControl@{SerialControl}}
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classSerialControl_1_1Module}{Module}}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{namespaceSerialControl_a275c08eb10687dadf058e79db3794aba}{read\+Message}} (int fd, char $\ast$data)
+\item 
+std\+::vector$<$ \mbox{\hyperlink{classSerialControl_1_1Module}{Module}} $\ast$ $>$ \mbox{\hyperlink{namespaceSerialControl_a72206d069455b02cd47cc58a1cfbace5}{list\+Modules}} ()
+\item 
+int \mbox{\hyperlink{namespaceSerialControl_ae11022dfef31e0b8d8124629b26476eb}{update}} ()
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{namespaceSerialControl_a275d9f14ad9b2900481a2f507df60d04}{initialized}} = false
+\item 
+char \mbox{\hyperlink{namespaceSerialControl_a0ed1846ed80502298402e9cd36725da3}{paths}} \mbox{[}$\,$\mbox{]}\mbox{[}14\mbox{]} = \{\char`\"{}/dev/tty\+U\+S\+B00\char`\"{},\char`\"{}/dev/tty\+A\+C\+M00\char`\"{}\}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{namespaceSerialControl_a72206d069455b02cd47cc58a1cfbace5}\label{namespaceSerialControl_a72206d069455b02cd47cc58a1cfbace5}} 
+\index{SerialControl@{SerialControl}!listModules@{listModules}}
+\index{listModules@{listModules}!SerialControl@{SerialControl}}
+\subsubsection{\texorpdfstring{listModules()}{listModules()}}
+{\footnotesize\ttfamily std\+::vector$<$ \mbox{\hyperlink{classSerialControl_1_1Module}{Module}} $\ast$ $>$ Serial\+Control\+::list\+Modules (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Update the list of modules connected return value \+: a list of the modules names (given by the modules) \mbox{\Hypertarget{namespaceSerialControl_a275c08eb10687dadf058e79db3794aba}\label{namespaceSerialControl_a275c08eb10687dadf058e79db3794aba}} 
+\index{SerialControl@{SerialControl}!readMessage@{readMessage}}
+\index{readMessage@{readMessage}!SerialControl@{SerialControl}}
+\subsubsection{\texorpdfstring{readMessage()}{readMessage()}}
+{\footnotesize\ttfamily int Serial\+Control\+::read\+Message (\begin{DoxyParamCaption}\item[{int}]{fd,  }\item[{char $\ast$}]{data }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceSerialControl_ae11022dfef31e0b8d8124629b26476eb}\label{namespaceSerialControl_ae11022dfef31e0b8d8124629b26476eb}} 
+\index{SerialControl@{SerialControl}!update@{update}}
+\index{update@{update}!SerialControl@{SerialControl}}
+\subsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily int Serial\+Control\+::update (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Check for every module that has a callback if there is any message. if there is, they will be passed to the callbakc function 
+
+\subsection{Variable Documentation}
+\mbox{\Hypertarget{namespaceSerialControl_a275d9f14ad9b2900481a2f507df60d04}\label{namespaceSerialControl_a275d9f14ad9b2900481a2f507df60d04}} 
+\index{SerialControl@{SerialControl}!initialized@{initialized}}
+\index{initialized@{initialized}!SerialControl@{SerialControl}}
+\subsubsection{\texorpdfstring{initialized}{initialized}}
+{\footnotesize\ttfamily bool Serial\+Control\+::initialized = false}
+
+\mbox{\Hypertarget{namespaceSerialControl_a0ed1846ed80502298402e9cd36725da3}\label{namespaceSerialControl_a0ed1846ed80502298402e9cd36725da3}} 
+\index{SerialControl@{SerialControl}!paths@{paths}}
+\index{paths@{paths}!SerialControl@{SerialControl}}
+\subsubsection{\texorpdfstring{paths}{paths}}
+{\footnotesize\ttfamily char Serial\+Control\+::paths\mbox{[}$\,$\mbox{]}\mbox{[}14\mbox{]} = \{\char`\"{}/dev/tty\+U\+S\+B00\char`\"{},\char`\"{}/dev/tty\+A\+C\+M00\char`\"{}\}}
+

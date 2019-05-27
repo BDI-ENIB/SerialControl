@@ -1,0 +1,112 @@
+\hypertarget{SerialControl_8hpp}{}\section{linux/\+Serial\+Control.hpp File Reference}
+\label{SerialControl_8hpp}\index{linux/SerialControl.hpp@{linux/SerialControl.hpp}}
+{\ttfamily \#include $<$string$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$list$>$}\newline
+{\ttfamily \#include $<$fstream$>$}\newline
+{\ttfamily \#include $<$tuple$>$}\newline
+{\ttfamily \#include $<$functional$>$}\newline
+{\ttfamily \#include $<$termios.\+h$>$}\newline
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classSerialControl_1_1Module}{Serial\+Control\+::\+Module}}
+\end{DoxyCompactItemize}
+\subsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+ \mbox{\hyperlink{namespaceSerialControl}{Serial\+Control}}
+\end{DoxyCompactItemize}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{SerialControl_8hpp_aded4012e77ec37914723bec40a225e46}{M\+A\+X\+\_\+\+I\+N\+D\+EX}}~10
+\item 
+\#define \mbox{\hyperlink{SerialControl_8hpp_acb84a306ee37479f97cf0b476560f027}{M\+A\+X\+\_\+\+M\+E\+S\+S\+A\+G\+E\+\_\+\+S\+I\+ZE}}~256
+\item 
+\#define \mbox{\hyperlink{SerialControl_8hpp_a450b25fc156f102c829d6e74b77a61be}{W\+R\+I\+T\+E\+\_\+\+T\+R\+Y\+\_\+\+NB}}~3
+\item 
+\#define \mbox{\hyperlink{SerialControl_8hpp_ad72dbcf6d0153db1b8d8a58001feed83}{D\+E\+B\+UG}}~1
+\item 
+\#define \mbox{\hyperlink{SerialControl_8hpp_a8fe83ac76edc595f6b98cd4a4127aed5}{E\+R\+R\+OR}}~1
+\item 
+\#define \mbox{\hyperlink{SerialControl_8hpp_a734bbab06e1a9fd2e5522db0221ff6e3}{B\+A\+U\+D\+R\+A\+TE}}~B2000000
+\item 
+\#define \mbox{\hyperlink{SerialControl_8hpp_a644cb29ad187e68e45a2d3a4eea8bcfc}{W\+R\+I\+T\+E\+\_\+\+F\+A\+IL}}~\char`\"{}sc\+\_\+wf\char`\"{}
+\item 
+\#define \mbox{\hyperlink{SerialControl_8hpp_a6444c2e455774a97c0ecdc9a11a2a15c}{R\+E\+A\+D\+\_\+\+F\+A\+IL}}~\char`\"{}sc\+\_\+rf\char`\"{}
+\item 
+\#define \mbox{\hyperlink{SerialControl_8hpp_a5f137187c6a892935c5acd036f609b22}{N\+O\+\_\+\+R\+E\+S\+P\+O\+N\+SE}}~\char`\"{}sc\+\_\+nr\char`\"{}
+\item 
+\#define \mbox{\hyperlink{SerialControl_8hpp_af8d7a9868042677db691b7dd12a38b8e}{S\+E\+R\+I\+A\+L\+\_\+\+T\+I\+M\+E\+O\+UT}}~1
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+std\+::vector$<$ Module $\ast$ $>$ \mbox{\hyperlink{namespaceSerialControl_a72206d069455b02cd47cc58a1cfbace5}{Serial\+Control\+::list\+Modules}} ()
+\item 
+int \mbox{\hyperlink{namespaceSerialControl_ae11022dfef31e0b8d8124629b26476eb}{Serial\+Control\+::update}} ()
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\mbox{\Hypertarget{SerialControl_8hpp_a734bbab06e1a9fd2e5522db0221ff6e3}\label{SerialControl_8hpp_a734bbab06e1a9fd2e5522db0221ff6e3}} 
+\index{SerialControl.hpp@{SerialControl.hpp}!BAUDRATE@{BAUDRATE}}
+\index{BAUDRATE@{BAUDRATE}!SerialControl.hpp@{SerialControl.hpp}}
+\subsubsection{\texorpdfstring{BAUDRATE}{BAUDRATE}}
+{\footnotesize\ttfamily \#define B\+A\+U\+D\+R\+A\+TE~B2000000}
+
+\mbox{\Hypertarget{SerialControl_8hpp_ad72dbcf6d0153db1b8d8a58001feed83}\label{SerialControl_8hpp_ad72dbcf6d0153db1b8d8a58001feed83}} 
+\index{SerialControl.hpp@{SerialControl.hpp}!DEBUG@{DEBUG}}
+\index{DEBUG@{DEBUG}!SerialControl.hpp@{SerialControl.hpp}}
+\subsubsection{\texorpdfstring{DEBUG}{DEBUG}}
+{\footnotesize\ttfamily \#define D\+E\+B\+UG~1}
+
+\mbox{\Hypertarget{SerialControl_8hpp_a8fe83ac76edc595f6b98cd4a4127aed5}\label{SerialControl_8hpp_a8fe83ac76edc595f6b98cd4a4127aed5}} 
+\index{SerialControl.hpp@{SerialControl.hpp}!ERROR@{ERROR}}
+\index{ERROR@{ERROR}!SerialControl.hpp@{SerialControl.hpp}}
+\subsubsection{\texorpdfstring{ERROR}{ERROR}}
+{\footnotesize\ttfamily \#define E\+R\+R\+OR~1}
+
+\mbox{\Hypertarget{SerialControl_8hpp_aded4012e77ec37914723bec40a225e46}\label{SerialControl_8hpp_aded4012e77ec37914723bec40a225e46}} 
+\index{SerialControl.hpp@{SerialControl.hpp}!MAX\_INDEX@{MAX\_INDEX}}
+\index{MAX\_INDEX@{MAX\_INDEX}!SerialControl.hpp@{SerialControl.hpp}}
+\subsubsection{\texorpdfstring{MAX\_INDEX}{MAX\_INDEX}}
+{\footnotesize\ttfamily \#define M\+A\+X\+\_\+\+I\+N\+D\+EX~10}
+
+\mbox{\Hypertarget{SerialControl_8hpp_acb84a306ee37479f97cf0b476560f027}\label{SerialControl_8hpp_acb84a306ee37479f97cf0b476560f027}} 
+\index{SerialControl.hpp@{SerialControl.hpp}!MAX\_MESSAGE\_SIZE@{MAX\_MESSAGE\_SIZE}}
+\index{MAX\_MESSAGE\_SIZE@{MAX\_MESSAGE\_SIZE}!SerialControl.hpp@{SerialControl.hpp}}
+\subsubsection{\texorpdfstring{MAX\_MESSAGE\_SIZE}{MAX\_MESSAGE\_SIZE}}
+{\footnotesize\ttfamily \#define M\+A\+X\+\_\+\+M\+E\+S\+S\+A\+G\+E\+\_\+\+S\+I\+ZE~256}
+
+\mbox{\Hypertarget{SerialControl_8hpp_a5f137187c6a892935c5acd036f609b22}\label{SerialControl_8hpp_a5f137187c6a892935c5acd036f609b22}} 
+\index{SerialControl.hpp@{SerialControl.hpp}!NO\_RESPONSE@{NO\_RESPONSE}}
+\index{NO\_RESPONSE@{NO\_RESPONSE}!SerialControl.hpp@{SerialControl.hpp}}
+\subsubsection{\texorpdfstring{NO\_RESPONSE}{NO\_RESPONSE}}
+{\footnotesize\ttfamily \#define N\+O\+\_\+\+R\+E\+S\+P\+O\+N\+SE~\char`\"{}sc\+\_\+nr\char`\"{}}
+
+\mbox{\Hypertarget{SerialControl_8hpp_a6444c2e455774a97c0ecdc9a11a2a15c}\label{SerialControl_8hpp_a6444c2e455774a97c0ecdc9a11a2a15c}} 
+\index{SerialControl.hpp@{SerialControl.hpp}!READ\_FAIL@{READ\_FAIL}}
+\index{READ\_FAIL@{READ\_FAIL}!SerialControl.hpp@{SerialControl.hpp}}
+\subsubsection{\texorpdfstring{READ\_FAIL}{READ\_FAIL}}
+{\footnotesize\ttfamily \#define R\+E\+A\+D\+\_\+\+F\+A\+IL~\char`\"{}sc\+\_\+rf\char`\"{}}
+
+\mbox{\Hypertarget{SerialControl_8hpp_af8d7a9868042677db691b7dd12a38b8e}\label{SerialControl_8hpp_af8d7a9868042677db691b7dd12a38b8e}} 
+\index{SerialControl.hpp@{SerialControl.hpp}!SERIAL\_TIMEOUT@{SERIAL\_TIMEOUT}}
+\index{SERIAL\_TIMEOUT@{SERIAL\_TIMEOUT}!SerialControl.hpp@{SerialControl.hpp}}
+\subsubsection{\texorpdfstring{SERIAL\_TIMEOUT}{SERIAL\_TIMEOUT}}
+{\footnotesize\ttfamily \#define S\+E\+R\+I\+A\+L\+\_\+\+T\+I\+M\+E\+O\+UT~1}
+
+\mbox{\Hypertarget{SerialControl_8hpp_a644cb29ad187e68e45a2d3a4eea8bcfc}\label{SerialControl_8hpp_a644cb29ad187e68e45a2d3a4eea8bcfc}} 
+\index{SerialControl.hpp@{SerialControl.hpp}!WRITE\_FAIL@{WRITE\_FAIL}}
+\index{WRITE\_FAIL@{WRITE\_FAIL}!SerialControl.hpp@{SerialControl.hpp}}
+\subsubsection{\texorpdfstring{WRITE\_FAIL}{WRITE\_FAIL}}
+{\footnotesize\ttfamily \#define W\+R\+I\+T\+E\+\_\+\+F\+A\+IL~\char`\"{}sc\+\_\+wf\char`\"{}}
+
+\mbox{\Hypertarget{SerialControl_8hpp_a450b25fc156f102c829d6e74b77a61be}\label{SerialControl_8hpp_a450b25fc156f102c829d6e74b77a61be}} 
+\index{SerialControl.hpp@{SerialControl.hpp}!WRITE\_TRY\_NB@{WRITE\_TRY\_NB}}
+\index{WRITE\_TRY\_NB@{WRITE\_TRY\_NB}!SerialControl.hpp@{SerialControl.hpp}}
+\subsubsection{\texorpdfstring{WRITE\_TRY\_NB}{WRITE\_TRY\_NB}}
+{\footnotesize\ttfamily \#define W\+R\+I\+T\+E\+\_\+\+T\+R\+Y\+\_\+\+NB~3}
+

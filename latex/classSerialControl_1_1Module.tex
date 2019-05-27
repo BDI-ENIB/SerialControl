@@ -1,0 +1,75 @@
+\hypertarget{classSerialControl_1_1Module}{}\section{Serial\+Control\+::Module Class Reference}
+\label{classSerialControl_1_1Module}\index{SerialControl::Module@{SerialControl::Module}}
+
+
+{\ttfamily \#include $<$Serial\+Control.\+hpp$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classSerialControl_1_1Module_ab8ce49d7a4a18c035a92a09c62d6d377}{Module}} (const std\+::string \mbox{\hyperlink{classSerialControl_1_1Module_a7366c32df408fb367deb22bab7ee0bc5}{name}}, const int fd, const struct termios old\+Attr)
+\item 
+std\+::string \mbox{\hyperlink{classSerialControl_1_1Module_a173ba39a19dc536e15e03683c5a30081}{send\+Command}} (const std\+::string \&cmd) const
+\item 
+int \mbox{\hyperlink{classSerialControl_1_1Module_a2f1390a94d7c56d8868a692e8a949c6d}{watch}} (void callback(const std\+::string \&cmd))
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \mbox{\hyperlink{classSerialControl_1_1Module_a7366c32df408fb367deb22bab7ee0bc5}{name}}
+\end{DoxyCompactItemize}
+\subsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{classSerialControl_1_1Module_a49ece8cb08e27584142748fa70eea00b}{update}} ()
+\end{DoxyCompactItemize}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classSerialControl_1_1Module_ab8ce49d7a4a18c035a92a09c62d6d377}\label{classSerialControl_1_1Module_ab8ce49d7a4a18c035a92a09c62d6d377}} 
+\index{SerialControl::Module@{SerialControl::Module}!Module@{Module}}
+\index{Module@{Module}!SerialControl::Module@{SerialControl::Module}}
+\subsubsection{\texorpdfstring{Module()}{Module()}}
+{\footnotesize\ttfamily Serial\+Control\+::\+Module\+::\+Module (\begin{DoxyParamCaption}\item[{const std\+::string}]{name,  }\item[{const int}]{fd,  }\item[{const struct termios}]{old\+Attr }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classSerialControl_1_1Module_a173ba39a19dc536e15e03683c5a30081}\label{classSerialControl_1_1Module_a173ba39a19dc536e15e03683c5a30081}} 
+\index{SerialControl::Module@{SerialControl::Module}!sendCommand@{sendCommand}}
+\index{sendCommand@{sendCommand}!SerialControl::Module@{SerialControl::Module}}
+\subsubsection{\texorpdfstring{sendCommand()}{sendCommand()}}
+{\footnotesize\ttfamily std\+::string Serial\+Control\+::\+Module\+::send\+Command (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{cmd }\end{DoxyParamCaption}) const}
+
+send a command to the device and check for a response \mbox{\Hypertarget{classSerialControl_1_1Module_a2f1390a94d7c56d8868a692e8a949c6d}\label{classSerialControl_1_1Module_a2f1390a94d7c56d8868a692e8a949c6d}} 
+\index{SerialControl::Module@{SerialControl::Module}!watch@{watch}}
+\index{watch@{watch}!SerialControl::Module@{SerialControl::Module}}
+\subsubsection{\texorpdfstring{watch()}{watch()}}
+{\footnotesize\ttfamily int Serial\+Control\+::\+Module\+::watch (\begin{DoxyParamCaption}\item[{void }]{callbackconst std\+::string \&cmd }\end{DoxyParamCaption})}
+
+set a lambda function that will be called in the update function when the device emit a message 
+
+\subsection{Friends And Related Function Documentation}
+\mbox{\Hypertarget{classSerialControl_1_1Module_a49ece8cb08e27584142748fa70eea00b}\label{classSerialControl_1_1Module_a49ece8cb08e27584142748fa70eea00b}} 
+\index{SerialControl::Module@{SerialControl::Module}!update@{update}}
+\index{update@{update}!SerialControl::Module@{SerialControl::Module}}
+\subsubsection{\texorpdfstring{update}{update}}
+{\footnotesize\ttfamily int update (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [friend]}}
+
+check all watched modules and execute the lambda associed
+
+Check for every module that has a callback if there is any message. if there is, they will be passed to the callbakc function 
+
+\subsection{Member Data Documentation}
+\mbox{\Hypertarget{classSerialControl_1_1Module_a7366c32df408fb367deb22bab7ee0bc5}\label{classSerialControl_1_1Module_a7366c32df408fb367deb22bab7ee0bc5}} 
+\index{SerialControl::Module@{SerialControl::Module}!name@{name}}
+\index{name@{name}!SerialControl::Module@{SerialControl::Module}}
+\subsubsection{\texorpdfstring{name}{name}}
+{\footnotesize\ttfamily std\+::string Serial\+Control\+::\+Module\+::name}
+
+Correspond to a physical device, allow to send commands and monitor the responses 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+linux/\mbox{\hyperlink{SerialControl_8hpp}{Serial\+Control.\+hpp}}\item 
+linux/\mbox{\hyperlink{SerialControl_8cpp}{Serial\+Control.\+cpp}}\end{DoxyCompactItemize}
