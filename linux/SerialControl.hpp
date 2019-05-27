@@ -31,6 +31,7 @@ namespace SerialControl {
 
 //----Module class
 
+//I admit that aving an object here is not the most elegant, but, well... to borinng to fix
 class Module {
 	/**
 	 * Correspond to a physical device, allow to send commands and monitor the responses
@@ -42,6 +43,8 @@ class Module {
 
 	Module(const std::string name, const int fd, const struct termios oldAttr):
 		name{name}, fileDescriptor{fd}, oldAttr{oldAttr} {}
+
+	~Module();
 
 	/**
 	 * send a command to the device and check for a response
@@ -82,6 +85,10 @@ namespace {
  */
 std::vector<Module*> listModules();
 
+/**
+ * Check for every module that has a callback if there is any message.
+ * if there is, they will be passed to the callbakc function
+ */
 int update();
 
 } //namespace SerialControl
