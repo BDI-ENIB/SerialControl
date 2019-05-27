@@ -23,7 +23,7 @@ int main() {
 
 	//don't forget a loop, or any form of repetition to call update() if you use callbacks
 	while(true){
-		SerialControl::update();
+	//	SerialControl::update();
 	}
 
 	return 0;

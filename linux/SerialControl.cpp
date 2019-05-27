@@ -16,13 +16,13 @@
 //----macros
 //
 #if DEBUG
-#define DEBUG_MSG(str) do { std::cout << "\n>> DEBUG:" << str << '\n'; } while(false)
+#define DEBUG_MSG(str) do { std::cout << " >> DEBUG:" << str << '\n'; } while(false)
 #else
 #define DEBUG_MSG(str) do {} while(false)
 #endif
 
 #if ERROR
-#define ERROR_MSG(str) do { std::cerr << "\n>> ERROR:" << str << '\n'; } while(false)
+#define ERROR_MSG(str) do { std::cerr << " >> ERROR:" << str << '\n'; } while(false)
 #else
 #define ERROR_MSG(str) do {} while(false)
 #endif
@@ -50,18 +50,11 @@ int readMessage(int fd, char* data) {
 	}
 	if(n==MAX_MESSAGE_SIZE) return -1;
 	data[n] = '\0';
-	DEBUG_MSG(data);
 	return n;
 }
 
 
 //----Module functions
-
-Module::~Module() {
-	close(this->fileDescriptor);
-	DEBUG_MSG("Closed " << this->name << " stream");
-}
-
 
 std::string 
 Module::sendCommand(const std::string& cmd) const{
@@ -74,7 +67,7 @@ Module::sendCommand(const std::string& cmd) const{
 	int i;
 	for(i=0; write(this->fileDescriptor,inData,size) != size && i < WRITE_TRY_NB; i++) {}
 	if(i == WRITE_TRY_NB) {
-		ERROR_MSG("Could not write message to " << this->name);
+		ERROR_MSG("could not write message to " << this->name);
 		return WRITE_FAIL;
 	}
 	
@@ -83,7 +76,7 @@ Module::sendCommand(const std::string& cmd) const{
 
 	if(n>0) { return std::string{data}; }
 	if(!n) { return std::string{NO_RESPONSE}; }
-	DEBUG_MSG("Could not get message from " << this->name);
+	DEBUG_MSG("ccould not get message from " << this->name);
 	return READ_FAIL;
 }
 
@@ -121,14 +114,14 @@ std::vector<Module*> listModules(){
 			//open file in R/W and without linking it to a terminal
 			const int fd = open(elem, O_RDWR | O_NOCTTY);
 			if(!fd) {
-				DEBUG_MSG("Could not open " << elem); 
+				DEBUG_MSG("could not open " << elem); 
 				continue;
 			}
 
 			//store default config to reapply it when communication end
 			struct termios oldAttr;
 			if(tcgetattr(fd, &oldAttr)) {
-				DEBUG_MSG("Could not get config for " << elem); 
+				DEBUG_MSG("could not get config for " << elem); 
 				continue;
 			}
 
@@ -153,13 +146,13 @@ std::vector<Module*> listModules(){
 			tcflush(fd,TCIOFLUSH);
 
 			if(write(fd,"whois;",6) != 6) {
-				DEBUG_MSG("Could not write whois message to " << elem);
+				DEBUG_MSG("could not write whois message to " << elem);
 				continue;
 			}
 
 			char data[MAX_MESSAGE_SIZE];
 			if(readMessage(fd,data)<=0){
-				DEBUG_MSG("Could not get message from " << elem);
+				DEBUG_MSG("could not get message from " << elem);
 			}
 
 			DEBUG_MSG("whois : " << data);
@@ -194,7 +187,7 @@ int update() {
 				tmp = READ_FAIL;
 				ERROR_MSG("message to long from " << elem.name);
 			}
-			DEBUG_MSG(tmp);
+			DEBUG_MSG("from " << elem.name << " : " << tmp);
 			elem.callback(tmp);
 		}
 	}
