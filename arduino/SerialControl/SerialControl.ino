@@ -5,20 +5,35 @@ bool spam = false;
 void setup() {                
   // initialize the digital pin as an output.
   pinMode(led, OUTPUT);
-  Serial.begin(9600);    
+  Serial.begin(2000000);    
 }
 
 void loop() {
-  digitalWrite(led,LOW);
-  if (Serial.available() > 0) {
-    // read the incoming byte:
-    String message = Serial.readStringUntil(';');
-    if(message.equals("whois")) {
-      spam = true;
-      Serial.println("I'm_Jesus;");
-      digitalWrite(led,HIGH);
-      delay(100);
-    }
+  
+	digitalWrite(led,LOW);
+  	if(Serial.available() > 0) {
     
-  }
+	// read the incoming message
+    String message = Serial.readStringUntil(';');
+
+	//then ccall function depending on message
+    if(message.equals("whois")) {
+
+	  /*it is recommanded to avaoid println because it insert
+	  unvanted \n*/
+      Serial.print("I'm_Groot;");
+      digitalWrite(led,HIGH);
+      delay(100); // just for the led, nothing to do with serial
+    }
+
+	if(message.equals("activate")) {
+      spam = true;
+	}
+
+  	}
+	
+	if(spam) {
+		Serial.print("spam;");
+	}
+
 }
