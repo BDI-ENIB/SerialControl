@@ -20,7 +20,7 @@ namespace SerialControl {
 #define MAX_INDEX 10
 #define MAX_MESSAGE_SIZE 256 //in number of chars
 #define WRITE_TRY_NB 3 	//number of time SerialControl will retry in case of fail while writing
-#define DEBUG 0
+#define DEBUG 1
 #define ERROR 1
 #define BAUDRATE B2000000
 #define WRITE_FAIL "sc_wf"
@@ -31,6 +31,7 @@ namespace SerialControl {
 
 //----Module class
 
+//I admit that aving an object here is not the most elegant, but, well... to borinng to fix
 class Module {
 	/**
 	 * Correspond to a physical device, allow to send commands and monitor the responses
@@ -82,6 +83,10 @@ namespace {
  */
 std::vector<Module*> listModules();
 
+/**
+ * Check for every module that has a callback if there is any message.
+ * if there is, they will be passed to the callbakc function
+ */
 int update();
 
 } //namespace SerialControl

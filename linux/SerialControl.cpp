@@ -3,7 +3,7 @@
 
 //----standard libs
 #include <iostream>
-#include <chrono>
+#include <chrono>		//tempos
 #include <thread>
 
 //----c libs
@@ -11,19 +11,18 @@
 #include <sys/stat.h>	//open parameters
 #include <fcntl.h>		//open function
 #include <unistd.h>		//write function
-#include <string.h> 	//strtok function
 
 
 //----macros
 //
 #if DEBUG
-#define DEBUG_MSG(str) do { std::cout << "DEBUG:" << str << '\n'; } while(false)
+#define DEBUG_MSG(str) do { std::cout << " >> DEBUG:" << str << '\n'; } while(false)
 #else
 #define DEBUG_MSG(str) do {} while(false)
 #endif
 
 #if ERROR
-#define ERROR_MSG(str) do { std::cerr << "ERROR:" << str << '\n'; } while(false)
+#define ERROR_MSG(str) do { std::cerr << " >> ERROR:" << str << '\n'; } while(false)
 #else
 #define ERROR_MSG(str) do {} while(false)
 #endif
@@ -31,8 +30,12 @@
 
 namespace SerialControl {
 
-using namespace std::chrono_literals;
+using namespace std::chrono_literals; //for easy time measuring
 
+
+//----usefull variables for the lib inner workings
+
+bool initialized = false;
 char paths[][14] = {"/dev/ttyUSB00","/dev/ttyACM00"};
 
 
@@ -47,9 +50,43 @@ int readMessage(int fd, char* data) {
 	}
 	if(n==MAX_MESSAGE_SIZE) return -1;
 	data[n] = '\0';
-	DEBUG_MSG(data);
 	return n;
 }
+
+
+//----Module functions
+
+std::string 
+Module::sendCommand(const std::string& cmd) const{
+
+	//TODO add support for commands longer than MAX_MESSAGE_SIZE
+	const ssize_t size = cmd.size();
+	const char* inData = cmd.c_str();
+
+	//write to device, try WRITE_TRY_NB before giving up
+	int i;
+	for(i=0; write(this->fileDescriptor,inData,size) != size && i < WRITE_TRY_NB; i++) {}
+	if(i == WRITE_TRY_NB) {
+		ERROR_MSG("could not write message to " << this->name);
+		return WRITE_FAIL;
+	}
+	
+	char data[MAX_MESSAGE_SIZE];
+	const int n = readMessage(this->fileDescriptor,data);
+
+	if(n>0) { return std::string{data}; }
+	if(!n) { return std::string{NO_RESPONSE}; }
+	DEBUG_MSG("ccould not get message from " << this->name);
+	return READ_FAIL;
+}
+
+
+int 
+Module::watch(void callback(const std::string& cmd)) {
+	this->callback = callback;
+	return 0;
+}
+
 
 //----functions
 
@@ -60,7 +97,8 @@ std::vector<Module*> listModules(){
 
 	//for each paths defined in hpp
 	for(auto &elem: paths)	{
-
+	
+		//TODO add dynamic search of modules
 		for(int i=0; i<=MAX_INDEX; i++) {
 
 			if(i/10) { 
@@ -76,14 +114,14 @@ std::vector<Module*> listModules(){
 			//open file in R/W and without linking it to a terminal
 			const int fd = open(elem, O_RDWR | O_NOCTTY);
 			if(!fd) {
-				DEBUG_MSG("Could not open " << elem); 
+				DEBUG_MSG("could not open " << elem); 
 				continue;
 			}
 
 			//store default config to reapply it when communication end
 			struct termios oldAttr;
 			if(tcgetattr(fd, &oldAttr)) {
-				DEBUG_MSG("Could not get config for " << elem); 
+				DEBUG_MSG("could not get config for " << elem); 
 				continue;
 			}
 
@@ -108,13 +146,13 @@ std::vector<Module*> listModules(){
 			tcflush(fd,TCIOFLUSH);
 
 			if(write(fd,"whois;",6) != 6) {
-				DEBUG_MSG("Could not write whois message for " << elem);
+				DEBUG_MSG("could not write whois message to " << elem);
 				continue;
 			}
 
 			char data[MAX_MESSAGE_SIZE];
 			if(readMessage(fd,data)<=0){
-				DEBUG_MSG("Could not get message from " << elem << '\n');
+				DEBUG_MSG("could not get message from " << elem);
 			}
 
 			DEBUG_MSG("whois : " << data);
@@ -126,39 +164,10 @@ std::vector<Module*> listModules(){
 		
 	}
 
-	return modules;
-}
-
-
-std::string 
-Module::sendCommand(const std::string& cmd) const{
-
-	//TODO add support for commands longer than MAX_MESSAGE_SIZE
-	const ssize_t size = cmd.size();
-	const char* inData = cmd.c_str();
-
-	//write to device, try WRITE_TRY_NB before giving up
-	int i;
-	for(i=0; write(this->fileDescriptor,inData,size) != size && i < WRITE_TRY_NB; i++) {}
-	if(i == WRITE_TRY_NB) {
-		ERROR_MSG("Could not write message to " << this->name);
-		return WRITE_FAIL;
-	}
-	
-	char data[MAX_MESSAGE_SIZE];
-	const int n = readMessage(this->fileDescriptor,data);
-
-	if(n>0) { return std::string{data}; }
-	if(!n) { return std::string{NO_RESPONSE}; }
-	DEBUG_MSG("Could not get message from " << this->name << '\n');
-	return READ_FAIL;
-}
-
-
-int 
-Module::watch(void callback(const std::string& cmd)) {
-	this->callback = callback;
-	return 0;
+	if(initialized) return modules;
+	std::this_thread::sleep_for(1.5s);  //for nanos that struggle to respond the first time
+	initialized = true;
+	return listModules();
 }
 
 
@@ -173,12 +182,12 @@ int update() {
 
 			std::string tmp;
 			if(n>0) tmp = std::string{data};
-			else if(!n) tmp = NO_RESPONSE;
+			else if(!n) continue;
 			else {
 				tmp = READ_FAIL;
-				ERROR_MSG("message to long from " << elem.name << '\n');
+				ERROR_MSG("message to long from " << elem.name);
 			}
-			DEBUG_MSG(tmp);
+			DEBUG_MSG("from " << elem.name << " : " << tmp);
 			elem.callback(tmp);
 		}
 	}
