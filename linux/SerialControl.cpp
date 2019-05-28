@@ -66,6 +66,7 @@ Module::sendCommand(const std::string& cmd) const{
 	//write to device, try WRITE_TRY_NB before giving up
 	int i;
 	for(i=0; write(this->fileDescriptor,inData,size) != size && i < WRITE_TRY_NB; i++) {}
+	DEBUG_MSG("sending to " << this->name << " : " << cmd);
 	if(i == WRITE_TRY_NB) {
 		ERROR_MSG("could not write message to " << this->name);
 		return WRITE_FAIL;

@@ -1,0 +1,53 @@
+\hypertarget{SerialControl_8cpp}{}\section{linux/\+Serial\+Control.cpp File Reference}
+\label{SerialControl_8cpp}\index{linux/SerialControl.cpp@{linux/SerialControl.cpp}}
+{\ttfamily \#include \char`\"{}Serial\+Control.\+hpp\char`\"{}}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$chrono$>$}\newline
+{\ttfamily \#include $<$thread$>$}\newline
+{\ttfamily \#include $<$termios.\+h$>$}\newline
+{\ttfamily \#include $<$sys/stat.\+h$>$}\newline
+{\ttfamily \#include $<$fcntl.\+h$>$}\newline
+{\ttfamily \#include $<$unistd.\+h$>$}\newline
+\subsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+ \mbox{\hyperlink{namespaceSerialControl}{Serial\+Control}}
+\end{DoxyCompactItemize}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{SerialControl_8cpp_af1206b4d3bda8c4c8c9257f369a9e9e1}{D\+E\+B\+U\+G\+\_\+\+M\+SG}}(str)~do \{ std\+::cout $<$$<$ \char`\"{} $>$$>$ D\+E\+B\+U\+G\+:\char`\"{} $<$$<$ str $<$$<$ \textquotesingle{}\textbackslash{}n\textquotesingle{}; \} while(false)
+\item 
+\#define \mbox{\hyperlink{SerialControl_8cpp_ab66bafe0e3773f589f4a239eb3aaecff}{E\+R\+R\+O\+R\+\_\+\+M\+SG}}(str)~do \{ std\+::cerr $<$$<$ \char`\"{} $>$$>$ E\+R\+R\+O\+R\+:\char`\"{} $<$$<$ str $<$$<$ \textquotesingle{}\textbackslash{}n\textquotesingle{}; \} while(false)
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{namespaceSerialControl_a275c08eb10687dadf058e79db3794aba}{Serial\+Control\+::read\+Message}} (int fd, char $\ast$data)
+\item 
+std\+::vector$<$ Module $\ast$ $>$ \mbox{\hyperlink{namespaceSerialControl_a72206d069455b02cd47cc58a1cfbace5}{Serial\+Control\+::list\+Modules}} ()
+\item 
+int \mbox{\hyperlink{namespaceSerialControl_ae11022dfef31e0b8d8124629b26476eb}{Serial\+Control\+::update}} ()
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{namespaceSerialControl_a275d9f14ad9b2900481a2f507df60d04}{Serial\+Control\+::initialized}} = false
+\item 
+char \mbox{\hyperlink{namespaceSerialControl_a0ed1846ed80502298402e9cd36725da3}{Serial\+Control\+::paths}} \mbox{[}$\,$\mbox{]}\mbox{[}14\mbox{]} = \{\char`\"{}/dev/tty\+U\+S\+B00\char`\"{},\char`\"{}/dev/tty\+A\+C\+M00\char`\"{}\}
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\mbox{\Hypertarget{SerialControl_8cpp_af1206b4d3bda8c4c8c9257f369a9e9e1}\label{SerialControl_8cpp_af1206b4d3bda8c4c8c9257f369a9e9e1}} 
+\index{SerialControl.cpp@{SerialControl.cpp}!DEBUG\_MSG@{DEBUG\_MSG}}
+\index{DEBUG\_MSG@{DEBUG\_MSG}!SerialControl.cpp@{SerialControl.cpp}}
+\subsubsection{\texorpdfstring{DEBUG\_MSG}{DEBUG\_MSG}}
+{\footnotesize\ttfamily \#define D\+E\+B\+U\+G\+\_\+\+M\+SG(\begin{DoxyParamCaption}\item[{}]{str }\end{DoxyParamCaption})~do \{ std\+::cout $<$$<$ \char`\"{} $>$$>$ D\+E\+B\+U\+G\+:\char`\"{} $<$$<$ str $<$$<$ \textquotesingle{}\textbackslash{}n\textquotesingle{}; \} while(false)}
+
+\mbox{\Hypertarget{SerialControl_8cpp_ab66bafe0e3773f589f4a239eb3aaecff}\label{SerialControl_8cpp_ab66bafe0e3773f589f4a239eb3aaecff}} 
+\index{SerialControl.cpp@{SerialControl.cpp}!ERROR\_MSG@{ERROR\_MSG}}
+\index{ERROR\_MSG@{ERROR\_MSG}!SerialControl.cpp@{SerialControl.cpp}}
+\subsubsection{\texorpdfstring{ERROR\_MSG}{ERROR\_MSG}}
+{\footnotesize\ttfamily \#define E\+R\+R\+O\+R\+\_\+\+M\+SG(\begin{DoxyParamCaption}\item[{}]{str }\end{DoxyParamCaption})~do \{ std\+::cerr $<$$<$ \char`\"{} $>$$>$ E\+R\+R\+O\+R\+:\char`\"{} $<$$<$ str $<$$<$ \textquotesingle{}\textbackslash{}n\textquotesingle{}; \} while(false)}
+
